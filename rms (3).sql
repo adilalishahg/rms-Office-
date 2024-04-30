@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 30, 2024 at 01:17 AM
+-- Generation Time: May 01, 2024 at 01:55 AM
 -- Server version: 10.1.37-MariaDB
 -- PHP Version: 5.6.40
 
@@ -48,10 +48,13 @@ CREATE TABLE `monthly_rent` (
   `flat_id` int(11) NOT NULL,
   `amount` int(11) NOT NULL,
   `rent_collected` int(50) NOT NULL DEFAULT '0',
+  `total_rent` varchar(100) NOT NULL,
   `booked` enum('yes','no') NOT NULL DEFAULT 'yes',
   `paid` enum('yes','no') NOT NULL DEFAULT 'no',
   `expense` int(11) NOT NULL,
+  `utility_bill` varchar(100) NOT NULL,
   `services` varchar(100) NOT NULL,
+  `check_out_date` varchar(50) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -60,8 +63,12 @@ CREATE TABLE `monthly_rent` (
 -- Dumping data for table `monthly_rent`
 --
 
-INSERT INTO `monthly_rent` (`id`, `tenant_id`, `flat_id`, `amount`, `rent_collected`, `booked`, `paid`, `expense`, `services`, `created_at`, `updated_at`) VALUES
-(28, 5, 4, 20000, 667, 'no', 'yes', 0, '{\"sweeper_id\":19,\"watchman_id\":18}', '2024-04-28 18:04:16', '2024-04-30 07:04:54');
+INSERT INTO `monthly_rent` (`id`, `tenant_id`, `flat_id`, `amount`, `rent_collected`, `total_rent`, `booked`, `paid`, `expense`, `utility_bill`, `services`, `check_out_date`, `created_at`, `updated_at`) VALUES
+(28, 5, 4, 20000, 0, '', 'no', 'yes', 0, '2000', '{\"sweeper_id\":19,\"watchman_id\":18}', '2024-04-30 14:40:51', '2024-04-28 18:04:16', '2024-05-01 06:04:35'),
+(30, 5, 4, 20000, 0, '3000', 'no', 'yes', 0, '2000', '{\"sweeper_id\":19}', '2024-04-30 14:40:51', '2024-04-30 20:35:06', '2024-05-01 06:04:52'),
+(36, 5, 4, 20000, 0, '0', 'no', 'yes', 0, '', '', '2024-04-30 14:41:55', '2024-04-30 21:41:55', '2024-04-30 21:41:55'),
+(37, 5, 5, 20000, 667, '12333', 'no', 'yes', 0, '10000', '{\"sweeper_id\":17,\"watchman_id\":18}', '2024-04-30 23:04:57', '2024-04-30 21:42:48', '2024-05-01 06:04:57'),
+(38, 5, 4, 20000, 667, '', 'no', 'no', 0, '', '', '2024-05-01 01:05:40', '2024-04-30 23:00:13', '2024-05-01 08:05:40');
 
 -- --------------------------------------------------------
 
@@ -88,8 +95,8 @@ CREATE TABLE `tbl_flats` (
 --
 
 INSERT INTO `tbl_flats` (`flat_id`, `flat_name`, `tower_id`, `type`, `rent`, `expense`, `owner_id`, `worker_id`, `status`, `created_at`, `updated_at`) VALUES
-(4, 'flat12', 14, 'B', '20000', '', '4', 0, '1', '2024-04-28 18:02:49', '2024-04-28 18:04:22'),
-(5, 'flat2', 14, 'B', '20000', '', '14', 0, '1', '2024-04-28 18:03:10', '2024-04-28 18:03:10');
+(4, 'flat12', 14, 'B', '20000', '', '4', 0, '2', '2024-04-28 18:02:49', '2024-04-30 23:54:44'),
+(5, 'flat2', 14, 'B', '20000', '', '14', 0, '1', '2024-04-28 18:03:10', '2024-04-30 21:43:12');
 
 -- --------------------------------------------------------
 
@@ -129,6 +136,7 @@ CREATE TABLE `tbl_users` (
   `contact_no` varchar(15) NOT NULL,
   `type` enum('1','2','3','4','5') NOT NULL COMMENT '1-Adim,2-Manager,3-Cusomer,4-Manager,5-Employee',
   `worker_type_id` int(11) NOT NULL,
+  `woker_salary` varchar(100) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `plainPassword` varchar(50) NOT NULL,
   `profile_img` varchar(200) NOT NULL
@@ -138,13 +146,13 @@ CREATE TABLE `tbl_users` (
 -- Dumping data for table `tbl_users`
 --
 
-INSERT INTO `tbl_users` (`user_id`, `first_name`, `last_name`, `username`, `email`, `password`, `contact_no`, `type`, `worker_type_id`, `created_at`, `plainPassword`, `profile_img`) VALUES
-(4, 'admin', 'Last ', '', 'admin@gmail.com', '$2y$10$Bt4aLSkoe53dI4ClV20MoenwrW8HfUMZakM6nodYGSk3U2uWr/YcS', '1231231', '1', 0, '2024-04-17 10:27:04', '12345678', 'assets/uploads/'),
-(5, 'customer', 'user', '', 'customer@gmail.com', '$2y$10$/F2detC3fU2qxuueD0d3Ze5I0g4GAjhaWFGwyQi/yppBSYteJo4Ji', '1231231', '3', 0, '2024-04-17 10:34:43', '123456', ''),
-(6, 'employee', 'employee', '', 'adilali@gmail.com', '$2y$10$K5r2ke0Aqws.yx22kMo92uBmUGGXuQXWAYh200AK4mh9uMO4gNV0C', '123456789', '2', 0, '2024-04-17 10:35:47', '12345678', 'assets/uploads/IMG_20230829_11201811.jpg'),
-(17, 'sweeper', 'worker', 'sweeperworker', 'adilali@gmail.com', '$2y$10$ab0mAd9GNU4cZujcZH1oe.8Yy6DpW8rwTUfDcsgzy/28w.1PZMggm', '12345678', '5', 6, '2024-04-28 22:14:00', '123456', ''),
-(18, 'watchan', 'employee', 'watchanemployee', 'watchman@gmail.com', '$2y$10$/UVU3tEjcsWmjuR.3QZjMOnGnC1UM3JV8c3q3NJbUN7CT60LMDD.q', '12345678', '5', 7, '2024-04-29 19:08:00', '123456', ''),
-(19, 'watchman', '2', 'watchman2', 'adilali@gmail.com', '$2y$10$FKwUwRZnWBlANc7CcgihNeFYBaZ1EqJ0U0K3IDDZZw4bZVqSHmjti', '1231231', '5', 6, '2024-04-29 19:40:30', '123456', '');
+INSERT INTO `tbl_users` (`user_id`, `first_name`, `last_name`, `username`, `email`, `password`, `contact_no`, `type`, `worker_type_id`, `woker_salary`, `created_at`, `plainPassword`, `profile_img`) VALUES
+(4, 'admin', 'Last ', '', 'admin@gmail.com', '$2y$10$Bt4aLSkoe53dI4ClV20MoenwrW8HfUMZakM6nodYGSk3U2uWr/YcS', '1231231', '1', 0, '', '2024-04-17 10:27:04', '12345678', 'assets/uploads/'),
+(5, 'customer', 'user', '', 'customer@gmail.com', '$2y$10$/F2detC3fU2qxuueD0d3Ze5I0g4GAjhaWFGwyQi/yppBSYteJo4Ji', '1231231', '3', 0, '', '2024-04-17 10:34:43', '123456', ''),
+(6, 'employee', 'employee', '', 'adilali@gmail.com', '$2y$10$K5r2ke0Aqws.yx22kMo92uBmUGGXuQXWAYh200AK4mh9uMO4gNV0C', '123456789', '2', 0, '', '2024-04-17 10:35:47', '12345678', 'assets/uploads/IMG_20230829_11201811.jpg'),
+(17, 'sweeper', 'worker', 'sweeperworker', 'adilali@gmail.com', '$2y$10$ab0mAd9GNU4cZujcZH1oe.8Yy6DpW8rwTUfDcsgzy/28w.1PZMggm', '12345678', '5', 7, '30000', '2024-04-28 22:14:00', '123456', ''),
+(18, 'watchan', 'employee', 'watchanemployee', 'watchman@gmail.com', '$2y$10$/UVU3tEjcsWmjuR.3QZjMOnGnC1UM3JV8c3q3NJbUN7CT60LMDD.q', '12345678', '5', 6, '20000', '2024-04-29 19:08:00', '123456', ''),
+(19, 'watchman', '2', 'watchman2', 'adilali@gmail.com', '$2y$10$FKwUwRZnWBlANc7CcgihNeFYBaZ1EqJ0U0K3IDDZZw4bZVqSHmjti', '1231231', '5', 7, '30000', '2024-04-29 19:40:30', '123456', '');
 
 -- --------------------------------------------------------
 
@@ -205,7 +213,17 @@ CREATE TABLE `tw_map` (
 INSERT INTO `tw_map` (`tw_id`, `worker_id`, `tenant_id`, `flat_id`, `rent_id`, `assigned_at`, `created_at`, `updated_at`) VALUES
 (18, 0, 5, 2, 25, '2024-04-27', '2024-04-27 12:43:52', '2024-04-27 13:19:01'),
 (19, 0, 5, 2, 25, '2024-04-27', '2024-04-27 12:44:35', '2024-04-27 13:19:01'),
-(20, 17, 5, 4, 28, '2024-04-29', '2024-04-28 18:04:16', '2024-04-28 22:45:30');
+(20, 17, 5, 4, 28, '2024-04-29', '2024-04-28 18:04:16', '2024-04-28 22:45:30'),
+(21, 0, 5, 4, 0, '0000-00-00', '2024-04-30 20:33:19', '2024-04-30 20:33:19'),
+(22, 0, 5, 4, 0, '0000-00-00', '2024-04-30 20:35:06', '2024-04-30 20:35:06'),
+(23, 0, 5, 5, 0, '0000-00-00', '2024-04-30 21:09:32', '2024-04-30 21:09:32'),
+(24, 0, 5, 5, 0, '0000-00-00', '2024-04-30 21:11:41', '2024-04-30 21:11:41'),
+(25, 0, 5, 5, 0, '0000-00-00', '2024-04-30 21:12:21', '2024-04-30 21:12:21'),
+(26, 0, 5, 4, 0, '0000-00-00', '2024-04-30 21:12:43', '2024-04-30 21:12:43'),
+(27, 0, 5, 4, 0, '0000-00-00', '2024-04-30 21:24:29', '2024-04-30 21:24:29'),
+(28, 0, 5, 4, 0, '0000-00-00', '2024-04-30 21:41:55', '2024-04-30 21:41:55'),
+(29, 0, 5, 5, 0, '0000-00-00', '2024-04-30 21:42:48', '2024-04-30 21:42:48'),
+(30, 0, 5, 4, 0, '0000-00-00', '2024-04-30 23:00:13', '2024-04-30 23:00:13');
 
 --
 -- Indexes for dumped tables
@@ -273,7 +291,7 @@ ALTER TABLE `employee`
 -- AUTO_INCREMENT for table `monthly_rent`
 --
 ALTER TABLE `monthly_rent`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT for table `tbl_flats`
@@ -309,7 +327,7 @@ ALTER TABLE `tenant`
 -- AUTO_INCREMENT for table `tw_map`
 --
 ALTER TABLE `tw_map`
-  MODIFY `tw_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `tw_id` int(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

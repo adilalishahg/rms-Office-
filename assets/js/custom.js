@@ -715,10 +715,14 @@ function testing_invoice_ajax(data){
 		// owner_options +=
 		// 	`<option value="${user.user_id}">${user.first_name} ${user.last_name} </option>`
 		// var role_user = user.type == "A" ? "Luxuary" : "Normal";
-		let pay_status = user.paid=='yes' ? "<span class='bg-warning text-danger px-5 py-2 rounded  text-primary font-weight-bolder m-1 '>Paid</span>" : `<a class='btn btn-info rounded m-1 px-5'  onclick="return pay_invoice('pay_invoice_ajax',` +
-		user.id +
-		`)">Pay</a>`;
- 		rows +=
+		// let pay_status = (user.paid=='yes'&&user.booked=='no') ? "<span class='bg-warning text-danger px-5 py-2 rounded  text-primary font-weight-bolder m-1 '>Paid</span>" ? (user.paid=='no'&&user.booked=='no') : "<span class='bg-warning text-danger px-5 py-2 rounded  text-primary font-weight-bolder m-1 '>Payment Pending</span>" `;
+ 		let pay_status = '';
+		if(user.paid=='yes'&&user.booked=='no'){
+			pay_status="<span class='bg-warning text-danger px-5 py-2 rounded  text-primary font-weight-bolder m-1 '>Paid</span>";
+		}else if(user.paid=='no'&&user.booked=='no'){
+			pay_status="<span class='bg-info text-white  px-5 py-2 rounded   font-weight-bolder m-1 '>Payment Pending</span>";
+		}
+		rows +=
 			`<tr>` +
 			`<td>` +
 			(index + 1) +
@@ -727,12 +731,12 @@ function testing_invoice_ajax(data){
 			formatTime(user.created_at)+
 			`</td> ` +
 			`<td>` +
-			user.amount +
-			`<td>${pay_status}</td>` +
+			user.amount + 
+			`<td>${pay_status}<a class='btn btn-primary'   data-toggle="modal" data-target="#customModalAssign"    onclick="view_invoice(` +
+			user.id +
+			`)">View Detail</a></td>`+
 			`</tr>`;
-			/*<td>${pay_status}<a class='btn btn-danger'  onclick="delete_invoice(` +
-			  user.id +
-			  `)">Delete</a></td> */
+			
 		// console.log(user)
 	});
 	var response =
@@ -810,4 +814,46 @@ function selectFlatPopUp2(
 		handleYes = "handleYesN('" + id + "','" + route + "','invoiceModel','" + load_module + "')"
 	)
 	 
+}
+
+function view_invoice(id){
+	$.get("get_invoice_details", {invoice_id:id}, function (data, status) {
+		$(".loader").hide();
+		let data1 = JSON.parse(data);
+		let flatJson = data1.flat_data 
+		let rentJson = data1.rent_data
+		let userJson = data1.user_data 
+		let total_rent = (data1.total_rent)
+		let response ='';
+		console.log(flatJson);
+		console.log(rentJson);
+		console.log(userJson);
+		console.log(total_rent);
+		const invoiceDetailsHTML = `
+			<div class="card shadow mb-4 w-100"> 
+				<div class="card-body">
+					<p><strong>Customer Name:</strong> [${userJson.first_name +' '+userJson.last_name }]</p>
+					<p><strong>Booking Date:</strong> [${rentJson.created_at}]</p>
+					<p><strong>Check-out Date:</strong> [${rentJson.check_out_date}]</p>
+					<p><strong>Rent:</strong> [${rentJson.rent_collected}]</p>
+					<p><strong>Bills:</strong> [${rentJson.utility_bill}]</p>
+					<p><strong>Service Charges:</strong> [${rentJson.utility_bill}]</p>
+					<p><strong>Total Charges:</strong> [${rentJson.total_rent}]</p>
+					<p><strong>Flat Name:</strong> [${flatJson.flat_name}]</p>
+					<p><strong>Flat Type:</strong> [${flatJson.flat_name}]</p>
+					<p><strong>Customer Email:</strong> [${userJson.email}]</p>
+				</div>
+			</div>`;
+
+		// $(".user_dash").html("");
+		// get_towers_ajax(data1);
+		$("#customModalLabelAssign").html('');
+		$(".modal-bodyAssign").html('');
+		$("#customModalLabelAssign").html('Invoice Details'); 
+		$(".modal-bodyAssign").html(invoiceDetailsHTML);
+		$(".loader").hide();
+	});
+	
+	
+	// $(".modal-bodyAssign").html(service_assign_html(sweeper_select,watchman_select,rent_id,utility_bill));
 }

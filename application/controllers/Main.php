@@ -407,13 +407,28 @@ class Main extends MY_Controller
 	}
 	function assign_worker_type_ajax(){
 		if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-			$data = array(
-				// 'worker_id' => $_POST['worker_id'],
-				'worker_type_id' => $_GET['worker_type'],
-			);
+			
 			$where = array(
 				'user_id' => $_GET['worker_id'], 
 			);
+			$where2 = array(
+				'worker_type_id' => $_GET['worker_type'], 
+			);
+			$worker_type = $this->Db_Model->get_data(TBL_WORKER_TYPE, $where2, '', '', $type = 1)[0]; 
+			$worker_salary =$worker_type['worker_salary'];
+			if($worker_salary!=''){
+
+				$data = array(
+					// 'worker_id' => $_POST['worker_id'],
+					'worker_type_id' => $_GET['worker_type'],
+					'woker_salary' => $worker_salary,
+				); 
+			} else{
+				$data = array(
+					// 'worker_id' => $_POST['worker_id'],
+					'worker_type_id' => $_GET['worker_type'] 
+				); 
+			}
 			// Save to database using the model
 			// $employee = $this->Db_Model->update_data(TBL_USER, $data);
 			$user_id = $this->Db_Model->update_data(TBL_USER, $data, $where);
@@ -503,8 +518,8 @@ class Main extends MY_Controller
 			$where_rent = array(
 				'id' => $_GET['rent_id']
 			);
-			$rentData = $this->Db_Model->get_data(TBL_RENT, $where_rent, '', '', $type = 1)[0];
-			if($rentData['services']==''){
+			$rentData1 = $this->Db_Model->get_data(TBL_RENT, $where_rent, '', '', $type = 1)[0];
+			if($rentData1['services']==''){
 				
 				
 			}else{
@@ -513,7 +528,8 @@ class Main extends MY_Controller
 			$watchman = array();
 			$sweeper = array();
 			$rentData = $this->Db_Model->get_worker_with_type();
-			foreach($rentData as &$rent){
+			// print_r($rentData);exit;
+			foreach($rentData as $rent){
 				if($rent['worker_type']=='watchman'){
 					array_push($watchman,$rent);
 				}
@@ -523,7 +539,7 @@ class Main extends MY_Controller
 			}
 			// echo json_encode(['status' => 'success', 'message' => 'Worker Type Get Success','worker_type'=>$rentData]);
 			// exit;
-			echo json_encode(['service_data' => $rentData,'sweeper' => $sweeper,'watchman' => $watchman]);
+			echo json_encode(['service_data' => $rentData1,'sweeper' => $sweeper,'watchman' => $watchman]);
 			exit;
 		}
 		 
@@ -533,11 +549,26 @@ class Main extends MY_Controller
 			$where = array(
 				'id' => $_POST['rent_id']
 			);
+			// print_r($_POST);exit;
 			// Save to database using the model
 			$rent_data = $this->Db_Model->get_data(TBL_RENT, $where, '', '', $type = 1)[0];
+			$sweeper_id = $watchman_id = 0;
+			// if($rent_data['services']==''||$rent_data['services']=='{}'||$rent_data['services']=='0'){
+			// 	echo "if";
+			// }else{
+				
+			// 	$services = (json_decode($rent_data['services']));  
+			// 	print_r($services->sweeper_id);
+			// }
+			// exit;
+			 
 			$service = '{';
-			$service_val = '';
+			$service_val =$utiltiyBill= '';
 				 
+			if($_POST['bill_val']!=''&&$_POST['bill_val']!='0'){
+
+				$utiltiyBill =$_POST['bill_val'];
+			} 
 			if($_POST['sweeper_id']!=''&&$_POST['sweeper_id']!='0'){
 
 				$service_val ='"sweeper_id":'.$_POST['sweeper_id'];
@@ -550,9 +581,10 @@ class Main extends MY_Controller
 			$service = $service.$service_val;
 			$service =$service. '}';
 			// print_r($service);
+			// exit;
 			 
 			$data = array(
-				'services' => $service
+				'services' => $service,'utility_bill' => $utiltiyBill
 			);
 			$where = array(
 				'id' => $_POST['rent_id']
@@ -560,7 +592,7 @@ class Main extends MY_Controller
 			// print_r($data);exit;
 			// Save to database using the model
 			$rent_data = $this->Db_Model->update_data(TBL_RENT, $data, $where);
-			$message = 'Service Assigned successfully';
+			$message = 'Service Assigned successfully'; 
 			echo json_encode(['message' => $message,"status"=>"success"]);
 			exit;
 		}
@@ -763,7 +795,7 @@ class Main extends MY_Controller
 							$rep['tower_earning'] =  strval(($this->Db_Model->get_tower_revenue($where_flat,TBL_RENT,$rep['id']))); 
 						}
 
-					}
+					} 
 			}
 			if($type=='flat_report'){
 				$report = $this->Db_Model->getFlatsReport($st_date, $en_date, $where,TBL_FLAT); 
@@ -1197,19 +1229,109 @@ class Main extends MY_Controller
 			exit;
 		}  
 	}
+	function calculateDaysSpent($created_at, $updated_at) {
+		// Convert date strings to DateTime objects
+		$created_date = new DateTime($created_at);
+		$updated_date = new DateTime($updated_at);
+		
+		// Calculate the difference in days
+		$interval = $created_date->diff($updated_date);
+		$days_difference = $interval->days;
+	
+		// If the difference is 0, return 0; otherwise, return the number of days
+		return $days_difference == 0 ? 1 : $days_difference;
+	}
 	public function checkout_ajax()
 	{
 
 
 		$where = 'flat_id=' . $_GET['id'];
 		$where2 =isset($_GET['rent_id'])? 'id=' . $_GET['rent_id']:'';
+		$rent_data = $this->Db_Model->get_data(TBL_RENT,  $where2, $order_by = null, $limit = null, $type = 1)[0];
+
 		$date =  date('Y-m-d H:m:s');
+		$daysPasswed = $this->calculateDaysSpent($rent_data['created_at'], $date);
+		// print_r($rent_data);exit;
+		$renc_collected =round($rent_data['amount']*($daysPasswed/30)) ;
 		 
-		$data=array('booked' => 'no','paid'=>'yes','rent_collected'=>$_GET['rent_charged'],'updated_at'=>$date);
+		 
+		$data=array('booked' => 'no','rent_collected'=>$renc_collected,'updated_at'=>$date,'check_out_date'=>$date);
 		$data1['status'] = '1';
 		$user_id = $this->Db_Model->update_data(TBL_RENT, $data, $where2);
 		$user_id = $this->Db_Model->update_data(TBL_FLAT, $data1, $where);
+		$where_tw = array('tenant_id'=>$rent_data['tenant_id'],'flat_id'=>$rent_data['flat_id']);
+		$data_tw['rent_id'] = $_GET['rent_id'];
+		$user_id = $this->Db_Model->update_data(TBL_TW_MAP, $data_tw, $data_tw);
+		// print_r($rent_data);exit;
+		print json_encode(['status' => 'success', 'message' => 'Checked Out Successfully', 'data' => $user_id]);
+		exit;
+	}
+	public function get_invoice_details()
+	{
+		if($_SERVER['REQUEST_METHOD'] === 'GET'){
+			$where = array(
+				'id' => $_GET['invoice_id']
+			);
+			$rent_data = $this->Db_Model->get_data(TBL_RENT, $where, $order_by = null, $limit = null, $type = 1)[0];
+			$total_rent = '';
+			if($rent_data['total_rent']==''||$rent_data['total_rent']=='0'){
+				$total_rent =$total_rent. $rent_data['rent_collected'].'[Without Service Charges and Utility Bills]';
+			}else{
+				
+				$total_rent =$total_rent. $rent_data['total_rent'].'[Service Charges and Utility Bills Included]';
+			}
+			$where_user = array(
+				'user_id' => $rent_data['tenant_id']
+			);
+			$where_flat = array(
+				'flat_id' => $rent_data['flat_id']
+			);
+			$user_data = $this->Db_Model->get_data(TBL_USER, $where_user, $order_by = null, $limit = null, $type = 1)[0];
+			$flat_data = $this->Db_Model->get_data(TBL_FLAT, $where_flat, $order_by = null, $limit = null, $type = 1)[0];
+			print json_encode(['status' => 'success', 'message' => 'Detail Fetched', 'flat_data' => $flat_data, 'rent_data' => $rent_data, 'user_data' => $user_data, 'total_rent' => $total_rent]);
+			exit;
+
+		}
+
+		 
+		
+	}
+	public function checkout_ajax_pay()
+	{
+
+
+		$where = 'flat_id=' . $_GET['id'];
+		$where2 =isset($_GET['rent_id'])? 'id=' . $_GET['rent_id']:'';
 		$rent_data = $this->Db_Model->get_data(TBL_RENT,  $where2, $order_by = null, $limit = null, $type = 1)[0];
+
+		$date =  date('Y-m-d H:m:s');
+		$daysPasswed = $this->calculateDaysSpent($rent_data['created_at'], $date);
+		// print_r($rent_data);
+		if(isset($rent_data['rent_collected'])&&$rent_data['rent_collected']!=''){
+			$renc_collected = $rent_data['rent_collected'];
+		}else{
+
+			$renc_collected =($rent_data['amount']*($daysPasswed/30)) ;
+		}
+		if(isset($rent_data['utility_bill'])&&$rent_data['utility_bill']!=''){
+			$renc_collected= $renc_collected+$rent_data['utility_bill'];
+		} 
+		 $services = (json_decode($rent_data['services']));
+		 if(isset($services->sweeper_id)&&!empty($services->sweeper_id)){
+			$where_user = array('user_id'=>$services->sweeper_id);
+			$sweeper_salary = $this->Db_Model->get_data(TBL_USER,  $where_user, $order_by = null, $limit = null, $type = 1)[0]['woker_salary'];
+			$renc_collected=$renc_collected+$sweeper_salary*($daysPasswed/30);
+
+		 }
+		 if(isset($services->watchman_id)&&!empty($services->watchman_id)){
+			$where_user = array('user_id'=>$services->watchman_id);
+			$watchman_salary = $this->Db_Model->get_data(TBL_USER,  $where_user, $order_by = null, $limit = null, $type = 1)[0]['woker_salary'];
+			$renc_collected=$renc_collected+$watchman_salary*($daysPasswed/30); 
+		}  
+		$data=array('booked' => 'no','paid' => 'yes','total_rent'=>round($renc_collected));
+		$data1['status'] = '1';
+		$user_id = $this->Db_Model->update_data(TBL_RENT, $data, $where2);
+		$user_id = $this->Db_Model->update_data(TBL_FLAT, $data1, $where);
 		$where_tw = array('tenant_id'=>$rent_data['tenant_id'],'flat_id'=>$rent_data['flat_id']);
 		$data_tw['rent_id'] = $_GET['rent_id'];
 		$user_id = $this->Db_Model->update_data(TBL_TW_MAP, $data_tw, $data_tw);

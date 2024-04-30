@@ -553,8 +553,11 @@ function user_edit_ajax(data,formatType='') {
 			$(".user_dash").html(response);
 		}else{
 			// exampleModal
-			$("#exampleModalLabel").html('User Edit');
-			$("#custom-body").html(response);
+			$("#customModalLabel").html('');
+			console.log(response)
+			$("#customModalLabel").html('User Edit');
+			$(".modal-body").html("");
+			$(".modal-body").html(response);
 		}
 }
 

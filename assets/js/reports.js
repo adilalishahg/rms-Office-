@@ -97,7 +97,8 @@ function load_reports(data) {
 				tableHeadFoot += `<th>Options</th>`;	
   
 		 }if(report=='flat_report'){
-			tableHeadFoot+=`<th>Flat Name</th><th>Owner Name</th><th>Status</th><th>Rent</th><th>Type</th><th>Worker</th><th>Option</th>`
+			//<th>Worker</th>
+			tableHeadFoot+=`<th>Flat Name</th><th>Owner Name</th><th>Status</th><th>Rent</th><th>Type</th><th>Option</th>`
 		 }if(report=='user_report'){
 			tableHeadFoot+=`<th>User Name</th>`
 			tableHeadFoot+=`<th>Email</th>`
@@ -145,13 +146,18 @@ function load_reports(data) {
 						<td>${earning}</td>
 						<td>${data.created_at}</td> `
 						+
-						`<td><a class='btn btn-info'  data-toggle="modal" data-target="#customModal"    onclick="return edit_tower_ajax('edit_tower_ajax',` +
-						data.id +
-						`,'modal')">Edit</a> <a class='btn btn-danger'  onclick="delete_tower(` +
+						`<td> <a class='btn btn-danger'  onclick="delete_tower(` +
 						data.id +
 						`,false)">Delete</a></td> ` +`</tr>` 
+						/**
+						 * <a class='btn btn-info'  data-toggle="modal" data-target="#customModal"    onclick="return edit_tower_ajax('edit_tower_ajax',` +
+						data.id +
+						`,'modal')">Edit</a>
+						 * 
+						 */
 					} 
 					if(report=='flat_report'){
+						// <td>${selectEmployee}</td>
 						let selectEmployee = '<select class="form-control" name="worker_id" id="worker_id" onchange="return assignWorker(' + data.flat_id + ')"><option value="0">Select</option>';
 						 data.worker.map((data2,index)=>{
 							let selected=data2.user_id ==data.worker_id?'selected':''
@@ -170,14 +176,14 @@ function load_reports(data) {
 							<td>${status}</td> 
 							<td>${earning}</td>
 							<td>${type}</td>
-							<td>${selectEmployee}</td>
+							
 						 
-							<td><a class='btn btn-info'  data-toggle="modal" data-target="#customModal"    onclick="return edit_flat('edit_flat_ajax',` +
-							data.flat_id +
-							`,'modal')">Edit</a> <a class='btn btn-danger'  onclick="delete_flat(` +
+							<td> <a class='btn btn-danger'  onclick="delete_flat(` +
 							data.flat_id +
 							`,false)">Delete</a></td></tr>`;
-						
+						// <a class='btn btn-info'  data-toggle="modal" data-target="#customModal"    onclick="return edit_flat('edit_flat_ajax',` +
+							// data.flat_id +
+							// `,'modal')">Edit</a>
 						}
 					if(report=='user_report'){
 						let username = data.username||data.first_name+' '+data.last_name
@@ -188,18 +194,21 @@ function load_reports(data) {
 							<td>${data.email}</td>
 							<td>${data.contact_no}</td>  
 							<td>${role}</td>  
-							<td> <a class='btn btn-info'  data-toggle="modal" data-target="#customModal"  onclick="return edit_employee(` +
-							data.user_id +
-							`,'modal')">Edit</a> <a class='btn btn-danger'  onclick="delete_employee(` +
+							<td>  <a class='btn btn-danger'  onclick="delete_employee(` +
 							data.user_id +
 							`,false)">Delete</a></td> ` +`</tr>` ;
+							// <a class='btn btn-info'  data-toggle="modal" data-target="#customModal"  onclick="return edit_employee(` +
+							// data.user_id +
+							// `,'modal')">Edit</a>
 			
 					}
 					if(report=='rent_report'){
 						let timeDiff = getDateDifference(data.created_at, data.updated_at)
 						let totalDays = getCurrentMonthDays()
-						let charged= Math.round(data.amount*(timeDiff.days/30) )
+						// let charged= Math.round(data.amount*(timeDiff.days/30) )
+						let charged= Math.round(data.rent_collected)
 						if(isNaN(charged) || charged =='Infinity'){charged=0}
+						if(isNaN(timeDiff.days) || timeDiff.days ==0){timeDiff.days=1}
 						let username = data.username||data.first_name+' '+data.last_name
 						let flat_type = data.flat_type=='A'?'Luxury':'Normal'
 						let selectEmployee = '<select class="form-control" name="assign_worker_id" id="assign_worker_id" onchange="return assignWorkerMap(' + data.id + ')"><option value="">Select</option>';
@@ -209,7 +218,11 @@ function load_reports(data) {
 						 })
 						 selectEmployee+=`</select>`
 						 console.log(selectEmployee)
-						let paid = data.paid=='yes'?'Paid':`<a   data-toggle="modal" data-target="#customModal"  onclick='return assignServices(${data.flat_id},${data.id},${charged},${data.services})' class="btn btn-primary">Assign Services</a> <a onclick="return checkout(${data.flat_id},${data.id},${charged})" class="btn btn-info">Pay</a>` 
+						 let charged_total = (data.paid=='yes')?data.total_rent:charged
+						 if(data.paid=='yes'){
+							(charged_total!==''&&charged_total!=='0')?charged_total=charged_total+'[Service & Bill Included]':''
+						 }
+						let paid = (data.paid=='yes')?'Paid':`<a   data-toggle="modal" data-target="#customModalAssign"  onclick='return assignServices(${data.flat_id},${data.id},${charged},${data.services})' class="btn btn-primary">Assign Services</a> <a onclick="return checkout_ajax_pay(${data.flat_id},${data.id},${charged})" class="btn btn-info">Pay</a>` 
 							 tr +=`<tr></tr>
 							<td>${index+1}</td>
 							<td>${username}</td> 
@@ -217,7 +230,7 @@ function load_reports(data) {
 							<td>${data.tower_name}</td>  
 							<td>${flat_type}</td>  
 							<td>${data.amount}</td>
-							<td>${charged}</td>
+							<td>${charged_total}</td>
 							<td>${timeDiff.days}</td> 
 							<td>${paid}</td>  
 							</tr>` ;
@@ -273,6 +286,23 @@ function checkout(flat_id,rent_id,rent_charged='') {
 		get_towers_ajax(data1);
 	});
 }
+function checkout_ajax_pay(flat_id,rent_id,rent_charged='') {
+	$(".loader").show();
+	const obj_checkOut = rent_id?{ id: flat_id,rent_id:rent_id,rent_charged }:{ id: flat_id }
+	$.get("checkout_ajax_pay", obj_checkOut, function (data, status) {
+		$(".loader").hide();
+		let data1 = JSON.parse(data);
+		console.log(data1);
+		if (data1.status == "error") {
+			showError(data1.errors);
+		}
+		if (data1.status == "success") {
+			swal(data1.message + "!", data1.message, "success");
+		}
+		// $(".user_dash").html("");
+		get_towers_ajax(data1);
+	});
+}
 const assignWorker = (flat_id) => { 
 	var worker_id = document.getElementById("worker_id").value;
 	console.log(worker_id);
@@ -315,9 +345,9 @@ const assignServices = (flat_id,rent_id,rent_charged,services) => {
     console.log(flat_id)
     console.log(rent_id)
     console.log(rent_charged) 
-	console.log(services.sweeper_id)
-	let sweeper_id = services.sweeper_id||'';
-	let watchman_id = services.watchman_id||''; 
+	console.log(services?.sweeper_id)
+	let sweeper_id = services?.sweeper_id||'';
+	let watchman_id = services?.watchman_id||''; 
 	let select_sweeper='<select class="form-control" name="sweeper_id" id="sweeper_id" ><option value="">Select Sweeper</option>';
 
 	let select_watchman='<select class="form-control" name="watchman_id" id="watchman_id" ><option value="">Select watchman</option>';
@@ -325,32 +355,35 @@ const assignServices = (flat_id,rent_id,rent_charged,services) => {
 	$.get("get_service_data", { rent_id: rent_id, flat_id: flat_id, assign_type: 'service' }, function (data, status) {
 		$(".loader").show();
 		let data1 = JSON.parse(data);
-		
+		console.log(data1.service_data.services)
+		let services_assigned = data1?.service_data?.services ?(JSON.parse(data1.service_data.services)):''
+		 
 		const {sweeper,service_data,watchman} = data1 
-		  
-		// if (data1.status == "error") {
-		// 	showError(data1.errors);
-		// }
-		// if (data1.status == "success") {
-		// 	swal(data1.message + "!", data1.message, "success");
-		// }
-		// $(".user_dash").html("");
-		// get_towers_ajax(data1);
-		const {sweeper_select,watchman_select} =assignServiceSelect(data1.sweeper,data1.watchman,sweeper_id,watchman_id) 
+		  let sweeper_assigned = services_assigned?.sweeper_id
+		  let watchman_assigned = services_assigned?.watchman_id
+		  let utility_bill = data1.service_data?.utility_bill
+		  console.log("watchman_assigned")
+		  console.log(watchman_assigned)
+		  console.log("sweeper_assigned")
+		  console.log(sweeper_assigned)
+		  console.log("utility_bill")
+		  console.log(utility_bill)
+		 
+		const {sweeper_select,watchman_select} =assignServiceSelect(data1.sweeper,data1.watchman,sweeper_assigned,watchman_assigned) 
 	
 	 
-		$("#customModalLabel").html('');
-		$(".modal-body").html('');
-		$("#customModalLabel").html('Assign Services'); 
+		$("#customModalLabelAssign").html('');
+		$(".modal-bodyAssign").html('');
+		$("#customModalLabelAssign").html('Assign Services'); 
 		$(".loader").hide();
-		$(".modal-body").html(service_assign_html(sweeper_select,watchman_select,rent_id));
+		$(".modal-bodyAssign").html(service_assign_html(sweeper_select,watchman_select,rent_id,utility_bill));
 		
 	});
 }
 
 var bill_val='';
 function service_assign_html(
-	sweeper_select,watchman_select,rent_id='',
+	sweeper_select,watchman_select,rent_id='',utility_bill='',
     data = "",
     route = "register_flat_ajax"
 ) {
@@ -359,7 +392,7 @@ function service_assign_html(
     let type = data?.type || "";
     let rent = data?.rent || "";
     let status = data?.status || "";
-	let bill=0
+	 
 
     return (
         `<div class="card o-hidden border-0 shadow-lg my-5">
@@ -386,15 +419,14 @@ function service_assign_html(
                             
 
                             <div class="form-group col-md-6">
-                                <label for="billInput">Bill</label>
-                                <input type="text" value="${bill}" name="bill" onkeyup="assign_bill(this.value,'bill_val')" class="form-control form-control-user" id="bill" placeholder="Bill">
+                                <label for="billInput">Utility Bill</label>
+                                <input type="text" value="${utility_bill}" name="bill" onkeyup="assign_bill(this.value,'bill_val')" class="form-control form-control-user" id="bill" placeholder="Bill">
                                 <span class="error-message" id="bill_error"></span>
                             </div>
                         </div>
 
                         <div class="form-row">
-                            ${button("save", "primary", "Save")}
-                            ${button("cancel", "danger", "Cancel")}
+                            ${button("save", "primary", "Save")} 
                         </div>
                     </form>
                     <hr>
@@ -414,6 +446,10 @@ function assignServiceSelect(sweeper,watchman,sweeper_id,watchman_id){
 	if(sweeper){
 		sweeper_select += `<select class="form-control" name="sweeper_id" id="sweeper_id" onchange="assign_sweeper(this.value,'sweeper_var')"><option value="">Select sweeper</option>`;
 		sweeper.map((sweeper,index) => {
+			console.log('sweeper_id')
+			console.log(sweeper_id)
+			console.log('sweeper.user_id')
+			console.log(sweeper.user_id)
 			let selected = sweeper.user_id==sweeper_id?'selected':''
 			sweeper_select +=`<option value="${sweeper.user_id}" ${selected}>${sweeper.username}</option>`
 		})
@@ -439,10 +475,11 @@ document.getElementById('assign_service_form').onsubmit = function() {
 };
 function assign_sweeper(val,variable){
 	sweeper_var = val;
+	console.log(sweeper_var)
 	 
 }
 function assign_watchman(val,variable){
-	watchman_var = val;
+	watchman_var = val;console.log(watchman_var)
 	 
 }
 function assign_bill(val,variable){
@@ -466,9 +503,9 @@ function preventAssignService(){
 			swal(data1.message + "!", data1.message, "success");
 		}
 		
-		$("#customModalLabel").html('');
-		$(".modal-body").html('');
-		$("#customModal").modal("hide");
+		$("#customModalLabelAssign").html('');
+		$(".modal-bodyAssign").html('');
+		$("#customModalAssign").modal("hide");
 		// $(".user_dash").html("");
 		// get_towers_ajax(data1);
 	});
